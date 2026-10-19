@@ -27,79 +27,44 @@ export const FireBackground: React.FC = () => {
     window.addEventListener('resize', handleResize);
     handleResize();
 
-    // Floating embers and fire particles
-    interface LightEmber {
-      x: number;
-      y: number;
-      radius: number;
-      speedY: number;
-      life: number;
-      maxLife: number;
-      hue: number;
-      swayFreq: number;
-      swayAmp: number;
-      swayOffset: number;
-    }
-
-    const emberCount = 55;
-    const embers: LightEmber[] = [];
-
-    const createLightEmber = (bottomOnly = true): LightEmber => {
-      const maxLife = 90 + Math.random() * 140;
-      return {
-        x: Math.random() * (width || 1200),
-        y: bottomOnly ? (height || 500) - Math.random() * 30 : Math.random() * (height || 500),
-        radius: 2.2 + Math.random() * 4.8,
-        speedY: 0.7 + Math.random() * 1.8,
-        life: bottomOnly ? 0 : Math.random() * maxLife,
-        maxLife,
-        hue: 20 + Math.random() * 26, // Luminous golden amber to warm flame orange
-        swayFreq: 0.015 + Math.random() * 0.025,
-        swayAmp: 1.8 + Math.random() * 3.2,
-        swayOffset: Math.random() * Math.PI * 2,
-      };
-    };
-
-    for (let i = 0; i < emberCount; i++) {
-      embers.push(createLightEmber(false));
-    }
-
     let time = 0;
 
     const render = () => {
-      time += 0.022;
+      time += 0.02;
       ctx.clearRect(0, 0, width, height);
 
-      // Organic dynamic flame flicker
-      const f1 = Math.sin(time * 3.2) * 0.16;
-      const f2 = Math.sin(time * 6.5) * 0.09;
-      const f3 = Math.cos(time * 1.5) * 0.12;
-      const fireIntensity = Math.max(0.85, Math.min(1.45, 1.1 + f1 + f2 + f3));
+      // Organic dynamic flame flicker and breathing pulse
+      const f1 = Math.sin(time * 2.8) * 0.16;
+      const f2 = Math.sin(time * 5.4) * 0.09;
+      const f3 = Math.cos(time * 1.3) * 0.12;
+      const fireIntensity = Math.max(0.85, Math.min(1.4, 1.1 + f1 + f2 + f3));
 
       ctx.globalCompositeOperation = 'screen';
 
-      // 1. Broad Radiant Warm Firelight Wash from Bottom
-      const baseWash = ctx.createLinearGradient(0, height, 0, height - 380);
-      baseWash.addColorStop(0, `rgba(255, 105, 15, ${0.52 * fireIntensity})`);   // Fiery orange base
-      baseWash.addColorStop(0.25, `rgba(235, 65, 8, ${0.35 * fireIntensity})`);  // Deep amber
-      baseWash.addColorStop(0.65, `rgba(160, 25, 4, ${0.16 * fireIntensity})`);  // Rich ruby glow
+      // 1. Broad Radiant Warm Firelight Wash Rising From Base
+      const washHeight = Math.min(height, 420);
+      const baseWash = ctx.createLinearGradient(0, height, 0, height - washHeight);
+      baseWash.addColorStop(0, `rgba(255, 105, 15, ${0.48 * fireIntensity})`);   // Fiery warm amber
+      baseWash.addColorStop(0.3, `rgba(225, 60, 8, ${0.32 * fireIntensity})`);   // Radiant orange
+      baseWash.addColorStop(0.7, `rgba(145, 20, 4, ${0.14 * fireIntensity})`);   // Deep velvety ruby
       baseWash.addColorStop(1, 'rgba(0, 0, 0, 0)');
 
       ctx.fillStyle = baseWash;
-      ctx.fillRect(0, Math.max(0, height - 380), width, 380);
+      ctx.fillRect(0, height - washHeight, width, washHeight);
 
-      // 2. Core Glowing Fire Hearths (Vibrant pulsating light pools across base)
-      const poolCount = Math.max(4, Math.floor(width / 190));
+      // 2. Core Ambient Hearth Light Pools (Broad, gentle, pulsating warm firelight bloom)
+      // Generates natural, continuous atmospheric firelight without small particle dots
+      const poolCount = Math.max(3, Math.floor(width / 220));
       for (let i = 0; i < poolCount; i++) {
-        const posX = (width / (poolCount + 1)) * (i + 1) + Math.sin(time * 2.1 + i * 1.7) * 48;
-        const posY = height - 12 + Math.cos(time * 2.5 + i) * 16;
-        const glowRadius = (220 + Math.sin(time * 2.8 + i * 2.2) * 55) * fireIntensity;
+        const posX = (width / (poolCount + 1)) * (i + 1) + Math.sin(time * 1.8 + i * 1.5) * 50;
+        const posY = height - 10 + Math.cos(time * 2.2 + i) * 15;
+        const glowRadius = (250 + Math.sin(time * 2.5 + i * 2.0) * 60) * fireIntensity;
 
         const hearthGlow = ctx.createRadialGradient(posX, posY, 0, posX, posY, glowRadius);
-        hearthGlow.addColorStop(0, `rgba(255, 230, 110, ${0.82 * fireIntensity})`); // White-gold core
-        hearthGlow.addColorStop(0.18, `rgba(255, 155, 25, ${0.65 * fireIntensity})`);// Fiery amber
-        hearthGlow.addColorStop(0.45, `rgba(240, 75, 12, ${0.42 * fireIntensity})`); // Vivid orange-red
-        hearthGlow.addColorStop(0.75, `rgba(175, 30, 6, ${0.18 * fireIntensity})`);  // Ruby halo
+        hearthGlow.addColorStop(0, `rgba(255, 220, 100, ${0.72 * fireIntensity})`); // Warm golden center
+        hearthGlow.addColorStop(0.25, `rgba(255, 140, 20, ${0.52 * fireIntensity})`);// Intense warm amber
+        hearthGlow.addColorStop(0.55, `rgba(230, 65, 10, ${0.28 * fireIntensity})`); // Fiery soft wash
+        hearthGlow.addColorStop(0.85, `rgba(160, 25, 5, ${0.10 * fireIntensity})`);  // Deep halo
         hearthGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
 
         ctx.fillStyle = hearthGlow;
@@ -108,43 +73,20 @@ export const FireBackground: React.FC = () => {
         ctx.fill();
       }
 
-      // 3. Floating Luminous Fire Embers & Bokeh Orbs
-      for (let i = 0; i < embers.length; i++) {
-        const e = embers[i];
-        e.life++;
-        e.y -= e.speedY;
-        e.x += Math.sin(e.life * e.swayFreq + e.swayOffset) * e.swayAmp;
+      // 3. Ambient Corner Hearth Glows (Anchors bottom-left and bottom-right edges)
+      const leftGlow = ctx.createRadialGradient(0, height, 0, 0, height, 320 * fireIntensity);
+      leftGlow.addColorStop(0, `rgba(255, 130, 20, ${0.5 * fireIntensity})`);
+      leftGlow.addColorStop(0.6, `rgba(180, 30, 6, ${0.2 * fireIntensity})`);
+      leftGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      ctx.fillStyle = leftGlow;
+      ctx.fillRect(0, height - 320, 320, 320);
 
-        const progress = e.life / e.maxLife;
-        let alpha = 1;
-        if (progress < 0.15) {
-          alpha = progress / 0.15;
-        } else {
-          alpha = Math.max(0, 1 - Math.pow(progress, 1.2));
-        }
-
-        const coronaR = e.radius * 4.8;
-        const emberGlow = ctx.createRadialGradient(e.x, e.y, 0, e.x, e.y, coronaR);
-        emberGlow.addColorStop(0, `hsla(${e.hue + 8}, 100%, 88%, ${alpha * 0.95 * fireIntensity})`);
-        emberGlow.addColorStop(0.32, `hsla(${e.hue}, 100%, 68%, ${alpha * 0.65 * fireIntensity})`);
-        emberGlow.addColorStop(0.7, `hsla(${e.hue - 12}, 100%, 48%, ${alpha * 0.25 * fireIntensity})`);
-        emberGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
-
-        ctx.fillStyle = emberGlow;
-        ctx.beginPath();
-        ctx.arc(e.x, e.y, coronaR, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Hot White-Gold Center Pinpoint
-        ctx.fillStyle = `rgba(255, 255, 235, ${alpha * 0.9 * fireIntensity})`;
-        ctx.beginPath();
-        ctx.arc(e.x, e.y, e.radius * 0.8, 0, Math.PI * 2);
-        ctx.fill();
-
-        if (e.life >= e.maxLife || e.y < height * 0.08) {
-          embers[i] = createLightEmber(true);
-        }
-      }
+      const rightGlow = ctx.createRadialGradient(width, height, 0, width, height, 320 * fireIntensity);
+      rightGlow.addColorStop(0, `rgba(255, 130, 20, ${0.5 * fireIntensity})`);
+      rightGlow.addColorStop(0.6, `rgba(180, 30, 6, ${0.2 * fireIntensity})`);
+      rightGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      ctx.fillStyle = rightGlow;
+      ctx.fillRect(width - 320, height - 320, 320, 320);
 
       ctx.globalCompositeOperation = 'source-over';
 
