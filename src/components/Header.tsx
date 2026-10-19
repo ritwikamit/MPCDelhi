@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Menu, X, ChevronDown, Sparkles, BookOpen, Film, Image, Briefcase, Phone, Award } from 'lucide-react';
+import { Menu, X, ChevronDown } from 'lucide-react';
 
 interface HeaderProps {
   currentPage: 'home' | 'founder' | 'services' | 'studio';
@@ -64,7 +64,7 @@ export const Header: React.FC<HeaderProps> = ({
     return () => window.removeEventListener('scroll', handleScroll);
   }, [currentPage]);
 
-  // Primary necessary nav items visible in order
+  // Primary necessary nav items in clean minimal order
   const primaryNavItems = [
     { id: 'home', label: 'HOME', action: () => onNavigate('home', 'home') },
     { id: 'founder', label: 'FOUNDER', action: () => onNavigate('founder') },
@@ -77,8 +77,8 @@ export const Header: React.FC<HeaderProps> = ({
     <header 
       className={`sticky top-0 z-50 w-full transition-all duration-300 ${
         scrolled 
-          ? 'bg-[#F5F5F5]/90 backdrop-blur-xl border-b border-[#DFD7BF] shadow-sm py-2.5 sm:py-3' 
-          : 'bg-[#F5F5F5]/75 backdrop-blur-md border-b border-[#DFD7BF]/60 py-3.5 sm:py-4'
+          ? 'bg-[#F5F5F5]/90 backdrop-blur-xl border-b border-[#DFD7BF] shadow-xs py-3' 
+          : 'bg-[#F5F5F5]/80 backdrop-blur-md border-b border-[#DFD7BF]/60 py-4'
       }`}
     >
       <div className="w-full px-4 sm:px-10 lg:px-14 flex items-center justify-between gap-4 sm:gap-8">
@@ -96,12 +96,12 @@ export const Header: React.FC<HeaderProps> = ({
         </button>
 
         {/* 
-          Desktop Nav Menus with Live Nav Scroll Animation
-          Order: HOME | FOUNDER | STORIES | SERVICES | CONTACT | MORE ▼
+          Minimal Editorial Desktop Navigation with Live Scroll Indicator
+          Order: HOME · FOUNDER · STORIES · SERVICES · CONTACT · MORE
         */}
         <nav 
           aria-label="Primary Navigation"
-          className="hidden lg:flex items-center gap-1.5 xl:gap-2 p-1 rounded-full bg-[#DFD7BF]/30 border border-[#DFD7BF]/60 text-[11px] xl:text-[12px] font-medium tracking-[0.15em] uppercase text-[#3F2305]/80 relative"
+          className="hidden lg:flex items-center gap-6 xl:gap-8 text-[11px] xl:text-[12px] font-medium tracking-[0.16em] uppercase text-[#3F2305]/70"
         >
           {primaryNavItems.map((item) => {
             const isActive = 
@@ -112,70 +112,60 @@ export const Header: React.FC<HeaderProps> = ({
               <button
                 key={item.id}
                 onClick={item.action}
-                className={`relative px-4 py-2 rounded-full transition-all duration-300 cursor-pointer font-semibold ${
+                className={`relative py-1 transition-all duration-300 cursor-pointer ${
                   isActive
-                    ? 'text-[#F5F5F5] shadow-xs'
-                    : 'text-[#3F2305]/80 hover:text-[#3F2305] hover:bg-black/[0.03]'
+                    ? 'text-[#3F2305] font-bold'
+                    : 'hover:text-[#3F2305]'
                 }`}
               >
-                {/* Live Animated Background Pill */}
+                <span>{item.label}</span>
+                {/* Minimal animated underline indicator */}
                 {isActive && (
-                  <span 
-                    className="absolute inset-0 rounded-full bg-[#3F2305] -z-10 animate-in fade-in zoom-in-95 duration-200 shadow-sm"
-                  />
+                  <span className="absolute left-0 right-0 -bottom-1 h-[2px] bg-[#3F2305] rounded-full animate-in fade-in zoom-in-75 duration-200" />
                 )}
-                <span className="relative z-10 flex items-center gap-1.5">
-                  {item.label}
-                  {isActive && <span className="w-1.5 h-1.5 rounded-full bg-[#DFD7BF] animate-pulse" />}
-                </span>
               </button>
             );
           })}
 
-          {/* "MORE" Dropdown Menu for Auxiliary Sections */}
+          {/* Minimal "MORE" Dropdown (Zero Icons, Pure Typography) */}
           <div className="relative" ref={dropdownRef}>
             <button
               onClick={() => setMoreDropdownOpen(!moreDropdownOpen)}
-              className={`flex items-center gap-1 px-3.5 py-2 rounded-full transition-all duration-300 cursor-pointer font-semibold ${
+              className={`flex items-center gap-1 py-1 transition-all duration-300 cursor-pointer ${
                 moreDropdownOpen || currentPage === 'studio'
-                  ? 'bg-[#3F2305]/10 text-[#3F2305]'
-                  : 'text-[#3F2305]/80 hover:text-[#3F2305] hover:bg-black/[0.03]'
+                  ? 'text-[#3F2305] font-bold'
+                  : 'hover:text-[#3F2305]'
               }`}
               aria-expanded={moreDropdownOpen}
               aria-haspopup="true"
             >
               <span>MORE</span>
               <ChevronDown 
-                className={`w-3.5 h-3.5 transition-transform duration-300 ${
+                className={`w-3 h-3 transition-transform duration-200 ${
                   moreDropdownOpen ? 'rotate-180' : ''
                 }`} 
               />
+              {currentPage === 'studio' && (
+                <span className="absolute left-0 right-0 -bottom-1 h-[2px] bg-[#3F2305] rounded-full" />
+              )}
             </button>
 
-            {/* Dropdown Content */}
+            {/* Minimal Dropdown Panel without icons */}
             {moreDropdownOpen && (
-              <div className="absolute right-0 mt-3 w-64 rounded-2xl bg-[#F5F5F5]/95 backdrop-blur-2xl border border-[#DFD7BF] shadow-2xl py-3 px-2 animate-in fade-in slide-in-from-top-2 duration-200 z-50">
-                <div className="px-3 py-1.5 text-[10px] uppercase font-mono tracking-widest text-[#3F2305]/50 font-bold border-b border-[#DFD7BF]/60 mb-1">
-                  Additional Spaces
-                </div>
-
+              <div className="absolute right-0 mt-3 w-52 rounded-xl bg-[#F5F5F5]/95 backdrop-blur-2xl border border-[#DFD7BF] shadow-xl py-2 px-1 animate-in fade-in slide-in-from-top-1 duration-150 z-50">
                 {/* Studio & Philosophy */}
                 <button
                   onClick={() => {
                     setMoreDropdownOpen(false);
                     onNavigate('studio');
                   }}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-xs tracking-wider transition-colors cursor-pointer ${
-                    currentPage === 'studio' 
-                      ? 'bg-[#3F2305] text-[#F5F5F5] font-semibold' 
-                      : 'text-[#3F2305] hover:bg-[#F2EAD3]'
+                  className={`w-full text-left px-3.5 py-2 rounded-lg text-[11px] tracking-[0.14em] uppercase transition-colors cursor-pointer ${
+                    currentPage === 'studio'
+                      ? 'bg-[#3F2305] text-[#F5F5F5] font-semibold'
+                      : 'text-[#3F2305]/85 hover:bg-[#DFD7BF]/40 hover:text-[#3F2305]'
                   }`}
                 >
-                  <Sparkles className="w-4 h-4 text-[#DFD7BF] shrink-0" />
-                  <div>
-                    <div className="font-semibold">Studio & Philosophy</div>
-                    <div className="text-[10px] opacity-75">3 Pillars of craftsmanship</div>
-                  </div>
+                  Studio & Philosophy
                 </button>
 
                 {/* Full Photo Archive */}
@@ -184,13 +174,9 @@ export const Header: React.FC<HeaderProps> = ({
                     setMoreDropdownOpen(false);
                     if (onOpenGallery) onOpenGallery();
                   }}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-xs tracking-wider text-[#3F2305] hover:bg-[#F2EAD3] transition-colors cursor-pointer"
+                  className="w-full text-left px-3.5 py-2 rounded-lg text-[11px] tracking-[0.14em] uppercase text-[#3F2305]/85 hover:bg-[#DFD7BF]/40 hover:text-[#3F2305] transition-colors cursor-pointer"
                 >
-                  <Image className="w-4 h-4 text-[#DFD7BF] shrink-0" />
-                  <div>
-                    <div className="font-semibold">Full Photo Archive</div>
-                    <div className="text-[10px] opacity-75">Complete wedding collections</div>
-                  </div>
+                  Full Photo Archive
                 </button>
 
                 {/* Join the Team */}
@@ -200,27 +186,22 @@ export const Header: React.FC<HeaderProps> = ({
                       setMoreDropdownOpen(false);
                       onOpenJoin();
                     }}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-xs tracking-wider text-[#3F2305] hover:bg-[#F2EAD3] transition-colors cursor-pointer"
+                    className="w-full text-left px-3.5 py-2 rounded-lg text-[11px] tracking-[0.14em] uppercase text-[#3F2305]/85 hover:bg-[#DFD7BF]/40 hover:text-[#3F2305] transition-colors cursor-pointer"
                   >
-                    <Briefcase className="w-4 h-4 text-[#DFD7BF] shrink-0" />
-                    <div>
-                      <div className="font-semibold">Join Our Team</div>
-                      <div className="text-[10px] opacity-75">Careers & second shooter casting</div>
-                    </div>
+                    Join Our Team
                   </button>
                 )}
 
                 {/* Book Consultation */}
-                <div className="pt-2 mt-1 border-t border-[#DFD7BF]/60">
+                <div className="pt-1.5 mt-1 border-t border-[#DFD7BF]/60">
                   <button
                     onClick={() => {
                       setMoreDropdownOpen(false);
                       onOpenBooking();
                     }}
-                    className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-left text-xs tracking-wider bg-[#3F2305] text-[#F5F5F5] font-semibold hover:bg-[#3F2305]/90 transition-all cursor-pointer shadow-xs"
+                    className="w-full text-left px-3.5 py-2 rounded-lg text-[11px] tracking-[0.14em] uppercase font-semibold text-[#3F2305] hover:bg-[#3F2305] hover:text-[#F5F5F5] transition-all cursor-pointer"
                   >
-                    <span>Book a Shoot</span>
-                    <Phone className="w-3.5 h-3.5" />
+                    Book A Shoot
                   </button>
                 </div>
               </div>
@@ -258,11 +239,11 @@ export const Header: React.FC<HeaderProps> = ({
 
       {/* Mobile Drawer Menu */}
       {mobileMenuOpen && (
-        <div className="lg:hidden w-full bg-[#F5F5F5] border-b border-[#DFD7BF] px-6 py-6 space-y-6 animate-in fade-in duration-200 shadow-xl max-h-[85vh] overflow-y-auto">
-          {/* Primary Necessary Navigation */}
+        <div className="lg:hidden w-full bg-[#F5F5F5] border-b border-[#DFD7BF] px-6 py-6 space-y-6 animate-in fade-in duration-200 shadow-xl max-h-[85vh] overflow-y-auto font-sans">
+          {/* Primary Navigation */}
           <div className="space-y-1">
-            <span className="text-[10px] font-mono uppercase tracking-widest text-[#3F2305]/60 font-bold block mb-2">
-              Primary Menus
+            <span className="text-[10px] font-mono uppercase tracking-widest text-[#3F2305]/50 font-bold block mb-2">
+              Menu
             </span>
             <nav className="flex flex-col gap-1 text-xs font-semibold tracking-wider uppercase text-[#3F2305]">
               {primaryNavItems.map((item) => (
@@ -280,17 +261,17 @@ export const Header: React.FC<HeaderProps> = ({
                 >
                   <span>{item.label}</span>
                   {((currentPage === 'home' && activeNav === item.id) || (currentPage === item.id)) && (
-                    <span className="w-2 h-2 rounded-full bg-[#DFD7BF]" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#DFD7BF]" />
                   )}
                 </button>
               ))}
             </nav>
           </div>
 
-          {/* More Menu (Additional Pages) */}
+          {/* More Spaces (Icon-free minimal list) */}
           <div className="space-y-1 pt-2 border-t border-[#DFD7BF]/60">
-            <span className="text-[10px] font-mono uppercase tracking-widest text-[#3F2305]/60 font-bold block mb-2">
-              More Spaces
+            <span className="text-[10px] font-mono uppercase tracking-widest text-[#3F2305]/50 font-bold block mb-2">
+              More
             </span>
             <div className="space-y-1 text-xs font-medium text-[#3F2305]">
               <button
@@ -298,20 +279,18 @@ export const Header: React.FC<HeaderProps> = ({
                   setMobileMenuOpen(false);
                   onNavigate('studio');
                 }}
-                className="w-full text-left py-2 px-3 rounded-lg hover:bg-[#F2EAD3] flex items-center gap-2.5"
+                className="w-full text-left py-2 px-3 rounded-lg hover:bg-[#F2EAD3] uppercase tracking-wider text-[11px]"
               >
-                <Sparkles className="w-4 h-4 text-[#3F2305]/70" />
-                <span>Studio & Philosophy</span>
+                Studio & Philosophy
               </button>
               <button
                 onClick={() => {
                   setMobileMenuOpen(false);
                   if (onOpenGallery) onOpenGallery();
                 }}
-                className="w-full text-left py-2 px-3 rounded-lg hover:bg-[#F2EAD3] flex items-center gap-2.5"
+                className="w-full text-left py-2 px-3 rounded-lg hover:bg-[#F2EAD3] uppercase tracking-wider text-[11px]"
               >
-                <Image className="w-4 h-4 text-[#3F2305]/70" />
-                <span>Full Photo Archive</span>
+                Full Photo Archive
               </button>
               {onOpenJoin && (
                 <button
@@ -319,10 +298,9 @@ export const Header: React.FC<HeaderProps> = ({
                     setMobileMenuOpen(false);
                     onOpenJoin();
                   }}
-                  className="w-full text-left py-2 px-3 rounded-lg hover:bg-[#F2EAD3] flex items-center gap-2.5"
+                  className="w-full text-left py-2 px-3 rounded-lg hover:bg-[#F2EAD3] uppercase tracking-wider text-[11px]"
                 >
-                  <Briefcase className="w-4 h-4 text-[#3F2305]/70" />
-                  <span>Join Our Team</span>
+                  Join Our Team
                 </button>
               )}
             </div>

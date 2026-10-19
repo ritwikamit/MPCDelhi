@@ -50,13 +50,15 @@ export const Footer: React.FC<FooterProps> = ({
               <span>MY PHOTO CLUB · DELHI NCR</span>
             </div>
 
-            {/* Lucid Logo Display */}
+            {/* Same Brand Logo as Header & Loading Screen */}
             <div className="flex items-center gap-3">
-              <img
-                src="/logo-light.png"
-                alt="My Photo Club Logo"
-                className="h-12 sm:h-14 md:h-16 w-auto object-contain block hover:opacity-90 transition-opacity filter drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)]"
-              />
+              <div className="inline-flex items-center bg-[#F5F5F5] px-3.5 py-1.5 rounded-xl shadow-md border border-[#DFD7BF]/50">
+                <img
+                  src="/logo-dark.png"
+                  alt="My Photo Club - A Treat For Best Click"
+                  className="h-9 sm:h-10 w-auto object-contain block"
+                />
+              </div>
             </div>
 
             <p className="text-xs sm:text-sm text-[#DFD7BF]/90 font-light leading-relaxed">
