@@ -29,7 +29,7 @@ export const HeroBackground: React.FC = () => {
       height = canvas.offsetHeight;
       canvas.width = Math.floor(width * dpr);
       canvas.height = Math.floor(height * dpr);
-      ctx.scale(dpr, dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     };
 
     window.addEventListener('resize', handleResize);
@@ -38,8 +38,7 @@ export const HeroBackground: React.FC = () => {
 
     // 24 Color stops mirroring the heroGrad gradient across the width
     const paletteStops = [
-      { r: 85, g: 6, b: 4 },     // Deep Maroon Anchor
-      { r: 105, g: 10, b: 6 },   // 0: Deep Crimson #690A06
+      { r: 105, g: 10, b: 6 },   // 0: Deep Maroon / Crimson #690A06
       { r: 112, g: 14, b: 8 },   // 1: Ruby Crimson #700E08
       { r: 110, g: 20, b: 12 },  // 2: Crimson-Walnut
       { r: 95, g: 25, b: 10 },   // 3: Warm Deep Walnut
@@ -62,6 +61,7 @@ export const HeroBackground: React.FC = () => {
       { r: 245, g: 245, b: 245 },// 20: Clean Off-White
       { r: 245, g: 245, b: 245 },// 21: Clean Off-White
       { r: 245, g: 245, b: 245 },// 22: Clean Off-White
+      { r: 245, g: 245, b: 245 },// 23: Clean Off-White
     ];
 
     const getPaletteColor = (t: number) => {
@@ -81,19 +81,23 @@ export const HeroBackground: React.FC = () => {
     let time = 0;
 
     const render = () => {
-      time += 0.018; // Smooth wave flow
+      time += 0.018; // Smooth harmonic fluid flow
       mouse.x += (mouse.targetX - mouse.x) * 0.05;
       mouse.y += (mouse.targetY - mouse.y) * 0.05;
 
       ctx.clearRect(0, 0, width, height);
 
-      // 0. Base deep maroon anchor on left to ensure 0% white gap ever appears
-      const baseLeftGrad = ctx.createLinearGradient(0, 0, width * 0.25, 0);
-      baseLeftGrad.addColorStop(0, '#420604');
-      baseLeftGrad.addColorStop(0.5, '#690A06');
-      baseLeftGrad.addColorStop(1, 'rgba(105, 10, 6, 0)');
-      ctx.fillStyle = baseLeftGrad;
-      ctx.fillRect(0, 0, width * 0.25, height);
+      // 0. Continuous Underlying Canvas Base Gradient:
+      // Left side is deep maroon #690A06; right side is clean off-white #F5F5F5.
+      // This ensures 100% solid opacity and zero white transparency anywhere on the left!
+      const bgGrad = ctx.createLinearGradient(0, 0, width, 0);
+      bgGrad.addColorStop(0, '#690A06');
+      bgGrad.addColorStop(0.18, '#3F2305');
+      bgGrad.addColorStop(0.55, '#DFD7BF');
+      bgGrad.addColorStop(0.85, '#F2EAD3');
+      bgGrad.addColorStop(1, '#F5F5F5');
+      ctx.fillStyle = bgGrad;
+      ctx.fillRect(0, 0, width, height);
 
       // Determine number of vertical fluted waves across the screen
       const columnCount = Math.max(18, Math.min(28, Math.floor(width / 55)));
@@ -102,9 +106,12 @@ export const HeroBackground: React.FC = () => {
       const stepsY = 32;
       const stepH = height / stepsY;
 
-      // START FROM c = -2 so the fluted waves extend well off the left screen edge!
-      const minCol = -2;
-      const maxCol = columnCount + 2;
+      // START FROM c = -4 AND END AT columnCount + 4
+      // This ensures waves start 200px+ off-screen to the left!
+      // When the waves sway and undulate, the left edge of the screen is ALWAYS 100% covered
+      // by continuous, moving, wavy maroon folds. Zero white can ever be visible!
+      const minCol = -4;
+      const maxCol = columnCount + 4;
       const seamPoints: Map<number, { x: number; y: number }[]> = new Map();
 
       for (let c = minCol; c <= maxCol; c++) {
@@ -130,6 +137,9 @@ export const HeroBackground: React.FC = () => {
       for (let c = minCol; c < maxCol; c++) {
         const leftPoints = seamPoints.get(c)!;
         const rightPoints = seamPoints.get(c + 1)!;
+        
+        // For any column at or to the left of the screen edge (c <= 0),
+        // it uses the rich deep maroon color stop so the left side is totally covered in wavy maroon folds
         const normalizedRatio = Math.max(0, Math.min(1, (c + 0.5) / columnCount));
         const colColor = getPaletteColor(normalizedRatio);
 
@@ -186,51 +196,7 @@ export const HeroBackground: React.FC = () => {
         ctx.stroke();
       }
 
-      // 1. EXTRA DISTINCT WAVY MAROON BAR ON THE LEFT SIDE OF THE SCREEN
-      // Requested by user to eliminate white visibility and anchor the drapery
-      const maroonBarWidth = Math.max(90, width * 0.11);
-      ctx.save();
-      ctx.beginPath();
-      ctx.moveTo(-10, 0);
-
-      // Left edge stays anchored past screen (-10)
-      ctx.lineTo(-10, height);
-
-      // Bottom edge connects to right contour of the maroon bar
-      const bottomWave = Math.sin(height * 0.007 + time * 1.5) * 16 + Math.cos(time * 0.9) * 8;
-      ctx.lineTo(maroonBarWidth + bottomWave, height);
-
-      // Curve upward along the undulating right boundary of the extra maroon bar
-      for (let s = stepsY - 1; s >= 0; s--) {
-        const y = s * stepH;
-        const wave = Math.sin(y * 0.008 + time * 1.5) * 18 + Math.cos(y * 0.016 - time * 1.2) * 9;
-        const x = maroonBarWidth + wave;
-        ctx.lineTo(x, y);
-      }
-      ctx.lineTo(-10, 0);
-      ctx.closePath();
-
-      // Rich 3D velvet maroon gradient
-      const maroonGrad = ctx.createLinearGradient(0, height * 0.5, maroonBarWidth + 20, height * 0.5);
-      maroonGrad.addColorStop(0, '#350402');      // Midnight Maroon
-      maroonGrad.addColorStop(0.25, '#540805');   // Deep Burgundy
-      maroonGrad.addColorStop(0.6, '#750e08');    // Rich Velvet Maroon
-      maroonGrad.addColorStop(0.85, '#91160e');   // Luminous Crimson Crest
-      maroonGrad.addColorStop(1, '#4a0805');      // Edge Shadow Seam
-
-      ctx.fillStyle = maroonGrad;
-      ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
-      ctx.shadowBlur = 18;
-      ctx.shadowOffsetX = 6;
-      ctx.fill();
-
-      // Subtle gold-kissed inner sheen line along the crest of the extra wavy maroon bar
-      ctx.lineWidth = 1.2;
-      ctx.strokeStyle = 'rgba(242, 234, 211, 0.28)';
-      ctx.stroke();
-      ctx.restore();
-
-      // 2. Continuous Soft Specular Sheen Moving Across the Undulating Waves
+      // Continuous Soft Specular Sheen Moving Across the Undulating Waves
       const sheenX = ((Math.sin(time * 0.6) + 1) / 2) * (width * 1.3) - width * 0.15;
       const sheenGrad = ctx.createRadialGradient(
         sheenX,
@@ -248,7 +214,7 @@ export const HeroBackground: React.FC = () => {
       ctx.fillStyle = sheenGrad;
       ctx.fillRect(0, 0, width, height);
 
-      // 3. Warm Ambient Ruby Glow Pulse on Left Folds
+      // Warm Ambient Ruby Glow Pulse on Left Folds
       const rubyPulse = Math.sin(time * 1.4) * 0.08 + 0.18;
       const rubyGrad = ctx.createRadialGradient(width * 0.08, height * 0.35, 0, width * 0.08, height * 0.35, width * 0.45);
       rubyGrad.addColorStop(0, `rgba(180, 20, 10, ${rubyPulse})`);
@@ -273,19 +239,14 @@ export const HeroBackground: React.FC = () => {
   return (
     <div className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none select-none">
       {/* 
-        High-Resolution Native Vector Wave Canvas with Extra Wavy Maroon Bar on Left:
-        Guaranteed zero white bleed on the left edge with fluid harmonic drape.
+        High-Resolution Native Vector Wave Canvas:
+        Wave folds begin from c = -4 (way off-screen to the left) and continue through columnCount + 4.
+        The left side is completely, 100% covered by moving wavy maroon drapery with zero white exposure!
       */}
       <canvas
         ref={canvasRef}
         className="w-full h-full block"
         aria-hidden="true"
-      />
-
-      {/* Static Left Edge Backup Scrim (Maroon Gradient Bar) to guarantee 100% solid opacity */}
-      <div 
-        className="absolute inset-y-0 left-0 w-16 sm:w-24 md:w-32 bg-gradient-to-r from-[#3b0503] via-[#5c0b07]/80 to-transparent pointer-events-none"
-        aria-hidden="true" 
       />
 
       {/* Gentle Edge Scrim for Perfect Typography Legibility */}

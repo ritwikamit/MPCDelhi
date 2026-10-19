@@ -17,7 +17,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
   return (
     <section 
       id="home"
-      className="relative w-full min-h-[calc(100svh-70px)] sm:min-h-[calc(100vh-80px)] flex flex-col justify-between pt-4 sm:pt-6 pb-6 sm:pb-10 overflow-hidden bg-gradient-to-r from-[#3b0503] via-[#2d1803]/40 to-[#F5F5F5]"
+      className="relative w-full min-h-[calc(100svh-70px)] sm:min-h-[calc(100vh-80px)] flex flex-col justify-between pt-4 sm:pt-6 pb-6 sm:pb-10 overflow-hidden bg-gradient-to-r from-[#690A06] via-[#DFD7BF]/30 to-[#F5F5F5]"
     >
       {/* Pristine Animated 60FPS Fluted Wave Background with Zero Distortion */}
       <HeroBackground />
