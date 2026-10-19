@@ -13,10 +13,11 @@ export const FireBackground: React.FC = () => {
     let width = 0;
     let height = 0;
     let dpr = 1;
+    let isVisible = false;
 
     const handleResize = () => {
       if (!canvas) return;
-      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      dpr = Math.min(window.devicePixelRatio || 1, 1.25);
       width = canvas.offsetWidth || canvas.parentElement?.offsetWidth || window.innerWidth;
       height = canvas.offsetHeight || canvas.parentElement?.offsetHeight || 600;
       canvas.width = Math.floor(width * dpr);
@@ -24,12 +25,14 @@ export const FireBackground: React.FC = () => {
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     };
 
-    window.addEventListener('resize', handleResize);
+    window.addEventListener('resize', handleResize, { passive: true });
     handleResize();
 
     let time = 0;
 
     const render = () => {
+      if (!isVisible) return; // Zero CPU/GPU burn when footer is not in viewport
+
       time += 0.02;
       ctx.clearRect(0, 0, width, height);
 
@@ -44,16 +47,15 @@ export const FireBackground: React.FC = () => {
       // 1. Broad Radiant Warm Firelight Wash Rising From Base
       const washHeight = Math.min(height, 420);
       const baseWash = ctx.createLinearGradient(0, height, 0, height - washHeight);
-      baseWash.addColorStop(0, `rgba(255, 105, 15, ${0.48 * fireIntensity})`);   // Fiery warm amber
-      baseWash.addColorStop(0.3, `rgba(225, 60, 8, ${0.32 * fireIntensity})`);   // Radiant orange
-      baseWash.addColorStop(0.7, `rgba(145, 20, 4, ${0.14 * fireIntensity})`);   // Deep velvety ruby
+      baseWash.addColorStop(0, `rgba(255, 105, 15, ${0.48 * fireIntensity})`);
+      baseWash.addColorStop(0.3, `rgba(225, 60, 8, ${0.32 * fireIntensity})`);
+      baseWash.addColorStop(0.7, `rgba(145, 20, 4, ${0.14 * fireIntensity})`);
       baseWash.addColorStop(1, 'rgba(0, 0, 0, 0)');
 
       ctx.fillStyle = baseWash;
       ctx.fillRect(0, height - washHeight, width, washHeight);
 
-      // 2. Core Ambient Hearth Light Pools (Broad, gentle, pulsating warm firelight bloom)
-      // Generates natural, continuous atmospheric firelight without small particle dots
+      // 2. Core Ambient Hearth Light Pools
       const poolCount = Math.max(3, Math.floor(width / 220));
       for (let i = 0; i < poolCount; i++) {
         const posX = (width / (poolCount + 1)) * (i + 1) + Math.sin(time * 1.8 + i * 1.5) * 50;
@@ -61,10 +63,10 @@ export const FireBackground: React.FC = () => {
         const glowRadius = (250 + Math.sin(time * 2.5 + i * 2.0) * 60) * fireIntensity;
 
         const hearthGlow = ctx.createRadialGradient(posX, posY, 0, posX, posY, glowRadius);
-        hearthGlow.addColorStop(0, `rgba(255, 220, 100, ${0.72 * fireIntensity})`); // Warm golden center
-        hearthGlow.addColorStop(0.25, `rgba(255, 140, 20, ${0.52 * fireIntensity})`);// Intense warm amber
-        hearthGlow.addColorStop(0.55, `rgba(230, 65, 10, ${0.28 * fireIntensity})`); // Fiery soft wash
-        hearthGlow.addColorStop(0.85, `rgba(160, 25, 5, ${0.10 * fireIntensity})`);  // Deep halo
+        hearthGlow.addColorStop(0, `rgba(255, 220, 100, ${0.72 * fireIntensity})`);
+        hearthGlow.addColorStop(0.25, `rgba(255, 140, 20, ${0.52 * fireIntensity})`);
+        hearthGlow.addColorStop(0.55, `rgba(230, 65, 10, ${0.28 * fireIntensity})`);
+        hearthGlow.addColorStop(0.85, `rgba(160, 25, 5, ${0.10 * fireIntensity})`);
         hearthGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
 
         ctx.fillStyle = hearthGlow;
@@ -73,7 +75,7 @@ export const FireBackground: React.FC = () => {
         ctx.fill();
       }
 
-      // 3. Ambient Corner Hearth Glows (Anchors bottom-left and bottom-right edges)
+      // 3. Ambient Corner Hearth Glows
       const leftGlow = ctx.createRadialGradient(0, height, 0, 0, height, 320 * fireIntensity);
       leftGlow.addColorStop(0, `rgba(255, 130, 20, ${0.5 * fireIntensity})`);
       leftGlow.addColorStop(0.6, `rgba(180, 30, 6, ${0.2 * fireIntensity})`);
@@ -93,9 +95,23 @@ export const FireBackground: React.FC = () => {
       animationFrameId = requestAnimationFrame(render);
     };
 
-    render();
+    // IntersectionObserver so footer animation ONLY runs when footer is in view
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+        isVisible = entry.isIntersecting;
+        if (isVisible) {
+          cancelAnimationFrame(animationFrameId);
+          animationFrameId = requestAnimationFrame(render);
+        }
+      },
+      { threshold: 0.01 }
+    );
+
+    observer.observe(canvas);
 
     return () => {
+      observer.disconnect();
       window.removeEventListener('resize', handleResize);
       cancelAnimationFrame(animationFrameId);
     };

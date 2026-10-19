@@ -9,15 +9,15 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({ onLoaded }) => {
   const [isFading, setIsFading] = useState(false);
 
   useEffect(() => {
-    // Show splash briefly, then fade out smoothly
+    // Show splash briefly, then fade out smoothly for fast snappy load
     const fadeTimer = setTimeout(() => {
       setIsFading(true);
-    }, 1100);
+    }, 550);
 
     const removeTimer = setTimeout(() => {
       setIsVisible(false);
       if (onLoaded) onLoaded();
-    }, 1600);
+    }, 850);
 
     return () => {
       clearTimeout(fadeTimer);

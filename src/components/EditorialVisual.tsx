@@ -6,12 +6,14 @@ interface EditorialVisualProps {
   photo: HeroPhoto;
   className?: string;
   showOverlay?: boolean;
+  priority?: boolean;
 }
 
 export const EditorialVisual: React.FC<EditorialVisualProps> = ({
   photo,
   className = '',
   showOverlay = true,
+  priority = false,
 }) => {
   const [imgError, setImgError] = useState(false);
 
@@ -24,7 +26,8 @@ export const EditorialVisual: React.FC<EditorialVisualProps> = ({
             src={photo.imageUrl}
             alt={photo.title}
             referrerPolicy="no-referrer"
-            loading="eager"
+            loading={priority ? 'eager' : 'lazy'}
+            decoding="async"
             onError={() => setImgError(true)}
             className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
           />
@@ -53,7 +56,7 @@ export const EditorialVisual: React.FC<EditorialVisualProps> = ({
         }}
       />
 
-      {/* Hover Information Scrim & Production Credits (NO indexes) */}
+      {/* Hover Information Scrim & Production Credits */}
       {showOverlay && (
         <div className="absolute inset-0 bg-neutral-950/75 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-between p-4 text-white">
           <div className="flex items-center justify-between text-[10px] tracking-[0.2em] uppercase font-sans font-semibold text-neutral-300">

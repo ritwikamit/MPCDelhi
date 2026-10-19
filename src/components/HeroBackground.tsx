@@ -6,17 +6,19 @@ export const HeroBackground: React.FC = () => {
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d', { alpha: false });
     if (!ctx) return;
 
     let animationFrameId: number;
     let width = 0;
     let height = 0;
     let dpr = 1;
+    let isVisible = true;
 
     let mouse = { x: 0.5, y: 0.5, targetX: 0.5, targetY: 0.5 };
 
     const handleMouseMove = (e: MouseEvent) => {
+      if (!isVisible) return;
       const rect = canvas.getBoundingClientRect();
       mouse.targetX = (e.clientX - rect.left) / rect.width;
       mouse.targetY = (e.clientY - rect.top) / rect.height;
@@ -24,15 +26,16 @@ export const HeroBackground: React.FC = () => {
 
     const handleResize = () => {
       if (!canvas) return;
-      dpr = Math.min(window.devicePixelRatio || 1, 2);
-      width = canvas.offsetWidth;
-      height = canvas.offsetHeight;
+      // Cap DPR to 1.25 to prevent lag on 4K/retina displays while retaining pristine smoothness
+      dpr = Math.min(window.devicePixelRatio || 1, 1.25);
+      width = canvas.offsetWidth || window.innerWidth;
+      height = canvas.offsetHeight || window.innerHeight;
       canvas.width = Math.floor(width * dpr);
       canvas.height = Math.floor(height * dpr);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     };
 
-    window.addEventListener('resize', handleResize);
+    window.addEventListener('resize', handleResize, { passive: true });
     window.addEventListener('mousemove', handleMouseMove, { passive: true });
     handleResize();
 
@@ -81,35 +84,31 @@ export const HeroBackground: React.FC = () => {
     let time = 0;
 
     const render = () => {
-      time += 0.018; // Smooth harmonic fluid flow
+      if (!isVisible) return; // Zero CPU/GPU burn when scrolled away
+
+      time += 0.016;
       mouse.x += (mouse.targetX - mouse.x) * 0.05;
       mouse.y += (mouse.targetY - mouse.y) * 0.05;
 
-      ctx.clearRect(0, 0, width, height);
-
-      // 0. Continuous Underlying Canvas Base Gradient:
-      // Left side is deep maroon #690A06; right side is clean off-white #F5F5F5.
-      // This ensures 100% solid opacity and zero white transparency anywhere on the left!
+      // 0. Base Solid Gradient: 100% solid, zero transparency
       const bgGrad = ctx.createLinearGradient(0, 0, width, 0);
       bgGrad.addColorStop(0, '#690A06');
-      bgGrad.addColorStop(0.18, '#3F2305');
+      bgGrad.addColorStop(0.2, '#3F2305');
       bgGrad.addColorStop(0.55, '#DFD7BF');
       bgGrad.addColorStop(0.85, '#F2EAD3');
       bgGrad.addColorStop(1, '#F5F5F5');
       ctx.fillStyle = bgGrad;
       ctx.fillRect(0, 0, width, height);
 
-      // Determine number of vertical fluted waves across the screen
-      const columnCount = Math.max(18, Math.min(28, Math.floor(width / 55)));
+      // Fluted wave columns
+      const columnCount = Math.max(16, Math.min(24, Math.floor(width / 60)));
       const colWidth = width / columnCount;
 
-      const stepsY = 32;
+      // 16 steps produce an ultra-smooth curve while cutting draw overhead by 50%
+      const stepsY = 16;
       const stepH = height / stepsY;
 
       // START FROM c = -4 AND END AT columnCount + 4
-      // This ensures waves start 200px+ off-screen to the left!
-      // When the waves sway and undulate, the left edge of the screen is ALWAYS 100% covered
-      // by continuous, moving, wavy maroon folds. Zero white can ever be visible!
       const minCol = -4;
       const maxCol = columnCount + 4;
       const seamPoints: Map<number, { x: number; y: number }[]> = new Map();
@@ -120,68 +119,53 @@ export const HeroBackground: React.FC = () => {
 
         for (let s = 0; s <= stepsY; s++) {
           const y = s * stepH;
+          const wave1 = Math.sin(y * 0.006 + time * 1.5 + c * 0.38) * 14;
+          const wave2 = Math.cos(y * 0.014 - time * 1.0 + c * 0.22) * 7;
+          const mouseDisplace = Math.sin((y / height) * Math.PI) * (mouse.x - 0.5) * 14;
 
-          // Harmonic wave formula for realistic fluid fabric ripples
-          const wave1 = Math.sin(y * 0.006 + time * 1.6 + c * 0.38) * 14;
-          const wave2 = Math.cos(y * 0.014 - time * 1.1 + c * 0.22) * 7;
-          const wave3 = Math.sin(y * 0.02 + time * 0.8) * 3;
-          const mouseDisplace = Math.sin((y / height) * Math.PI) * (mouse.x - 0.5) * 18;
-
-          const x = baseColX + wave1 + wave2 + wave3 + mouseDisplace;
+          const x = baseColX + wave1 + wave2 + mouseDisplace;
           points.push({ x, y });
         }
         seamPoints.set(c, points);
       }
 
-      // Draw each fluted column with 3D cylindrical lighting & rich palette gradient
+      // Draw each column with 3D cylindrical lighting
       for (let c = minCol; c < maxCol; c++) {
         const leftPoints = seamPoints.get(c)!;
         const rightPoints = seamPoints.get(c + 1)!;
-        
-        // For any column at or to the left of the screen edge (c <= 0),
-        // it uses the rich deep maroon color stop so the left side is totally covered in wavy maroon folds
         const normalizedRatio = Math.max(0, Math.min(1, (c + 0.5) / columnCount));
         const colColor = getPaletteColor(normalizedRatio);
 
         ctx.beginPath();
-        // Trace left seam downwards
         ctx.moveTo(leftPoints[0].x, leftPoints[0].y);
         for (let s = 1; s <= stepsY; s++) {
           const prev = leftPoints[s - 1];
           const curr = leftPoints[s];
-          const midX = (prev.x + curr.x) / 2;
-          const midY = (prev.y + curr.y) / 2;
+          const midX = (prev.x + curr.x) * 0.5;
+          const midY = (prev.y + curr.y) * 0.5;
           ctx.quadraticCurveTo(prev.x, prev.y, midX, midY);
         }
         ctx.lineTo(leftPoints[stepsY].x, leftPoints[stepsY].y);
-
-        // Trace bottom edge to right seam
         ctx.lineTo(rightPoints[stepsY].x, rightPoints[stepsY].y);
 
-        // Trace right seam upwards
         for (let s = stepsY - 1; s >= 0; s--) {
           const prev = rightPoints[s + 1];
           const curr = rightPoints[s];
-          const midX = (prev.x + curr.x) / 2;
-          const midY = (prev.y + curr.y) / 2;
+          const midX = (prev.x + curr.x) * 0.5;
+          const midY = (prev.y + curr.y) * 0.5;
           ctx.quadraticCurveTo(prev.x, prev.y, midX, midY);
         }
         ctx.lineTo(rightPoints[0].x, rightPoints[0].y);
         ctx.closePath();
 
-        // 3D Fluted Cylinder Lighting
         const sampleY = height * 0.5;
-        const xLeft = leftPoints[Math.floor(stepsY / 2)].x;
-        const xRight = rightPoints[Math.floor(stepsY / 2)].x;
+        const xLeft = leftPoints[Math.floor(stepsY * 0.5)].x;
+        const xRight = rightPoints[Math.floor(stepsY * 0.5)].x;
 
         const foldGrad = ctx.createLinearGradient(xLeft, sampleY, xRight, sampleY);
-
-        const highlightMult = 1.18;
-        const shadowMult = 0.82;
-
-        const cLight = `rgb(${Math.min(255, Math.floor(colColor.r * highlightMult))}, ${Math.min(255, Math.floor(colColor.g * highlightMult))}, ${Math.min(255, Math.floor(colColor.g * highlightMult))})`;
+        const cLight = `rgb(${Math.min(255, Math.floor(colColor.r * 1.15))}, ${Math.min(255, Math.floor(colColor.g * 1.15))}, ${Math.min(255, Math.floor(colColor.b * 1.15))})`;
         const cBase = `rgb(${colColor.r}, ${colColor.g}, ${colColor.b})`;
-        const cShadow = `rgb(${Math.floor(colColor.r * shadowMult)}, ${Math.floor(colColor.g * shadowMult)}, ${Math.floor(colColor.b * shadowMult)})`;
+        const cShadow = `rgb(${Math.floor(colColor.r * 0.85)}, ${Math.floor(colColor.g * 0.85)}, ${Math.floor(colColor.b * 0.85)})`;
 
         foldGrad.addColorStop(0, cShadow);
         foldGrad.addColorStop(0.35, cLight);
@@ -191,13 +175,13 @@ export const HeroBackground: React.FC = () => {
         ctx.fillStyle = foldGrad;
         ctx.fill();
 
-        ctx.lineWidth = 0.8;
-        ctx.strokeStyle = `rgba(0, 0, 0, ${normalizedRatio < 0.4 ? 0.32 : 0.12})`;
+        ctx.lineWidth = 0.75;
+        ctx.strokeStyle = `rgba(0, 0, 0, ${normalizedRatio < 0.4 ? 0.28 : 0.1})`;
         ctx.stroke();
       }
 
-      // Continuous Soft Specular Sheen Moving Across the Undulating Waves
-      const sheenX = ((Math.sin(time * 0.6) + 1) / 2) * (width * 1.3) - width * 0.15;
+      // Specular sheen
+      const sheenX = ((Math.sin(time * 0.5) + 1) * 0.5) * (width * 1.3) - width * 0.15;
       const sheenGrad = ctx.createRadialGradient(
         sheenX,
         height * 0.45,
@@ -206,30 +190,33 @@ export const HeroBackground: React.FC = () => {
         height * 0.45,
         width * 0.65
       );
-      sheenGrad.addColorStop(0, 'rgba(255, 255, 255, 0.12)');
-      sheenGrad.addColorStop(0.4, 'rgba(255, 245, 230, 0.05)');
-      sheenGrad.addColorStop(0.8, 'rgba(240, 230, 205, 0.01)');
+      sheenGrad.addColorStop(0, 'rgba(255, 255, 255, 0.1)');
+      sheenGrad.addColorStop(0.5, 'rgba(255, 245, 230, 0.04)');
       sheenGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-
       ctx.fillStyle = sheenGrad;
-      ctx.fillRect(0, 0, width, height);
-
-      // Warm Ambient Ruby Glow Pulse on Left Folds
-      const rubyPulse = Math.sin(time * 1.4) * 0.08 + 0.18;
-      const rubyGrad = ctx.createRadialGradient(width * 0.08, height * 0.35, 0, width * 0.08, height * 0.35, width * 0.45);
-      rubyGrad.addColorStop(0, `rgba(180, 20, 10, ${rubyPulse})`);
-      rubyGrad.addColorStop(0.65, 'rgba(63, 35, 5, 0.06)');
-      rubyGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-
-      ctx.fillStyle = rubyGrad;
       ctx.fillRect(0, 0, width, height);
 
       animationFrameId = requestAnimationFrame(render);
     };
 
-    render();
+    // IntersectionObserver to pause loop when Hero is out of view (saves massive CPU & battery)
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+        isVisible = entry.isIntersecting;
+        if (isVisible) {
+          cancelAnimationFrame(animationFrameId);
+          animationFrameId = requestAnimationFrame(render);
+        }
+      },
+      { threshold: 0.05 }
+    );
+
+    observer.observe(canvas);
+    animationFrameId = requestAnimationFrame(render);
 
     return () => {
+      observer.disconnect();
       window.removeEventListener('resize', handleResize);
       window.removeEventListener('mousemove', handleMouseMove);
       cancelAnimationFrame(animationFrameId);
@@ -238,28 +225,12 @@ export const HeroBackground: React.FC = () => {
 
   return (
     <div className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none select-none">
-      {/* 
-        High-Resolution Native Vector Wave Canvas:
-        Wave folds begin from c = -4 (way off-screen to the left) and continue through columnCount + 4.
-        The left side is completely, 100% covered by moving wavy maroon drapery with zero white exposure!
-      */}
       <canvas
         ref={canvasRef}
         className="w-full h-full block"
         aria-hidden="true"
       />
-
-      {/* Gentle Edge Scrim for Perfect Typography Legibility */}
       <div className="absolute inset-0 bg-gradient-to-r from-black/25 via-transparent to-[#F5F5F5]/15 pointer-events-none" />
-
-      {/* Ultra-subtle fine-art tactile silk grain */}
-      <div 
-        className="absolute inset-0 pointer-events-none opacity-10 mix-blend-overlay"
-        style={{
-          backgroundImage: `radial-gradient(circle at 50% 50%, rgba(255,255,255,0.6) 1px, transparent 1px)`,
-          backgroundSize: '4px 4px',
-        }}
-      />
     </div>
   );
 };

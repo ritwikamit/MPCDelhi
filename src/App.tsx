@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { HERO_PHOTOS, LANDSCAPE_WORKS } from './data/agencyData';
 import { HeroPhoto, LandscapeWork } from './types';
 import { Header } from './components/Header';
@@ -9,16 +9,18 @@ import { ServicesSection } from './components/ServicesSection';
 import { BookingSection } from './components/BookingSection';
 import { ContactSection } from './components/ContactSection';
 import { Footer } from './components/Footer';
-import { LightboxModal } from './components/LightboxModal';
-import { DedicatedGalleryModal } from './components/DedicatedGalleryModal';
-import { JoinModal } from './components/JoinModal';
 import { ScrollProgressButton } from './components/ScrollProgressButton';
 import { LoadingScreen } from './components/LoadingScreen';
 import { MobileQuickNav } from './components/MobileQuickNav';
-import { FounderPage } from './pages/FounderPage';
-import { ServicesPage } from './pages/ServicesPage';
-import { StudioPage } from './pages/StudioPage';
 import { CheckCircle2, X } from 'lucide-react';
+
+// Code-split heavy routes and modals for ultra-fast initial page load
+const FounderPage = React.lazy(() => import('./pages/FounderPage').then(m => ({ default: m.FounderPage })));
+const ServicesPage = React.lazy(() => import('./pages/ServicesPage').then(m => ({ default: m.ServicesPage })));
+const StudioPage = React.lazy(() => import('./pages/StudioPage').then(m => ({ default: m.StudioPage })));
+const DedicatedGalleryModal = React.lazy(() => import('./components/DedicatedGalleryModal').then(m => ({ default: m.DedicatedGalleryModal })));
+const LightboxModal = React.lazy(() => import('./components/LightboxModal').then(m => ({ default: m.LightboxModal })));
+const JoinModal = React.lazy(() => import('./components/JoinModal').then(m => ({ default: m.JoinModal })));
 
 type AnyMediaItem = 
   | { type: 'portrait'; data: HeroPhoto }
@@ -132,15 +134,15 @@ export default function App() {
     }
   };
 
-  // Build unified item list for Lightbox navigation
+  // Unified media items list for Lightbox navigation
   const allMediaItems: AnyMediaItem[] = [
     ...HERO_PHOTOS.map((p) => ({ type: 'portrait' as const, data: p })),
     ...LANDSCAPE_WORKS.map((w) => ({ type: 'landscape' as const, data: w })),
   ];
 
   return (
-    <div className="min-h-screen bg-[#F5F5F5] text-[#3F2305] selection:bg-[#3F2305] selection:text-[#F5F5F5] flex flex-col font-sans pb-16 sm:pb-0">
-      {/* Editorial Loading Screen with Palette Logo */}
+    <div className="min-h-screen bg-[#F5F5F5] text-[#3F2305] selection:bg-[#3F2305] selection:text-[#F5F5F5] flex flex-col font-sans pb-16 sm:pb-0 overflow-x-hidden">
+      {/* Full-Screen Minimal Splash Screen */}
       <LoadingScreen />
 
       {/* Toast Notification Banner */}
@@ -157,12 +159,7 @@ export default function App() {
         </div>
       )}
 
-      {/* 
-        Top Bar Header:
-        - Prioritized necessary menus (HOME, FOUNDER, STORIES, SERVICES, CONTACT)
-        - "MORE" dropdown for remaining sections
-        - Live animated nav indicator on scroll
-      */}
+      {/* Top Bar Header with Minimal Nav and live scroll spy */}
       <Header
         currentPage={currentPage}
         onNavigate={handleNavigate}
@@ -175,16 +172,14 @@ export default function App() {
       <main className="flex-1 w-full">
         {currentPage === 'home' && (
           <div className="animate-in fade-in duration-300">
-            {/* Hero Section with extra wavy maroon bar and zero white bleed */}
+            {/* Hero Section */}
             <HeroSection
               photos={HERO_PHOTOS}
               onSelectPhoto={(photo) => setSelectedItem({ type: 'portrait', data: photo })}
               onOpenGallery={() => setIsGalleryOpen(true)}
             />
 
-            {/* Note: Founder Section is moved to its own dedicated page (FounderPage) */}
-
-            {/* Signature Landscape Stories & Destination Nuptials */}
+            {/* Signature Landscape Stories */}
             <LandscapeSection
               onSelectLandscape={(work) => setSelectedItem({ type: 'landscape', data: work })}
               onOpenGallery={() => setIsGalleryOpen(true)}
@@ -207,40 +202,46 @@ export default function App() {
           </div>
         )}
 
-        {/* Dedicated Founder Page */}
-        {currentPage === 'founder' && (
-          <div className="animate-in fade-in duration-300">
-            <FounderPage
-              onOpenBooking={handleOpenBooking}
-              onOpenGallery={() => setIsGalleryOpen(true)}
-              onBackToHome={() => handleNavigate('home', 'home')}
-            />
-          </div>
-        )}
+        {/* Dedicated Pages Loaded via Suspense */}
+        <Suspense 
+          fallback={
+            <div className="min-h-[50vh] flex items-center justify-center text-xs tracking-widest uppercase font-semibold text-[#3F2305]/60 animate-pulse">
+              Loading...
+            </div>
+          }
+        >
+          {currentPage === 'founder' && (
+            <div className="animate-in fade-in duration-300">
+              <FounderPage
+                onOpenBooking={handleOpenBooking}
+                onOpenGallery={() => setIsGalleryOpen(true)}
+                onBackToHome={() => handleNavigate('home', 'home')}
+              />
+            </div>
+          )}
 
-        {/* Dedicated Services Page */}
-        {currentPage === 'services' && (
-          <div className="animate-in fade-in duration-300">
-            <ServicesPage
-              onOpenBooking={handleOpenBooking}
-              onBackToHome={() => handleNavigate('home', 'home')}
-            />
-          </div>
-        )}
+          {currentPage === 'services' && (
+            <div className="animate-in fade-in duration-300">
+              <ServicesPage
+                onOpenBooking={handleOpenBooking}
+                onBackToHome={() => handleNavigate('home', 'home')}
+              />
+            </div>
+          )}
 
-        {/* Dedicated Studio & Philosophy Page */}
-        {currentPage === 'studio' && (
-          <div className="animate-in fade-in duration-300">
-            <StudioPage
-              onOpenBooking={handleOpenBooking}
-              onOpenGallery={() => setIsGalleryOpen(true)}
-              onBackToHome={() => handleNavigate('home', 'home')}
-            />
-          </div>
-        )}
+          {currentPage === 'studio' && (
+            <div className="animate-in fade-in duration-300">
+              <StudioPage
+                onOpenBooking={handleOpenBooking}
+                onOpenGallery={() => setIsGalleryOpen(true)}
+                onBackToHome={() => handleNavigate('home', 'home')}
+              />
+            </div>
+          )}
+        </Suspense>
       </main>
 
-      {/* Dark Lucid Transparent Footer */}
+      {/* Dark Lucid Transparent Footer with Ambient Fire Glow */}
       <Footer
         onNavigate={handleNavigate}
         onOpenJoin={() => setIsJoinOpen(true)}
@@ -248,36 +249,42 @@ export default function App() {
         onOpenGallery={() => setIsGalleryOpen(true)}
       />
 
-      {/* Dedicated Full Photo Gallery Modal */}
-      <DedicatedGalleryModal
-        isOpen={isGalleryOpen}
-        onClose={() => setIsGalleryOpen(false)}
-        onSelectPhoto={(photo) => setSelectedItem({ type: 'portrait', data: photo })}
-        onSelectLandscape={(work) => setSelectedItem({ type: 'landscape', data: work })}
-        onOpenBooking={() => {
-          setIsGalleryOpen(false);
-          handleOpenBooking();
-        }}
-      />
+      {/* Modals Loaded Lazily on Demand */}
+      <Suspense fallback={null}>
+        {isGalleryOpen && (
+          <DedicatedGalleryModal
+            isOpen={isGalleryOpen}
+            onClose={() => setIsGalleryOpen(false)}
+            onSelectPhoto={(photo) => setSelectedItem({ type: 'portrait', data: photo })}
+            onSelectLandscape={(work) => setSelectedItem({ type: 'landscape', data: work })}
+            onOpenBooking={() => {
+              setIsGalleryOpen(false);
+              handleOpenBooking();
+            }}
+          />
+        )}
 
-      {/* Full-Screen High-Resolution Lightbox Modal */}
-      <LightboxModal
-        item={selectedItem}
-        allItems={allMediaItems}
-        onClose={() => setSelectedItem(null)}
-        onSelectItem={(item) => setSelectedItem(item)}
-        onOpenBooking={() => {
-          setSelectedItem(null);
-          handleOpenBooking();
-        }}
-      />
+        {selectedItem && (
+          <LightboxModal
+            item={selectedItem}
+            allItems={allMediaItems}
+            onClose={() => setSelectedItem(null)}
+            onSelectItem={(item) => setSelectedItem(item)}
+            onOpenBooking={() => {
+              setSelectedItem(null);
+              handleOpenBooking();
+            }}
+          />
+        )}
 
-      {/* Collaborative Team Inquiries Drawer */}
-      <JoinModal
-        isOpen={isJoinOpen}
-        onClose={() => setIsJoinOpen(false)}
-        onSuccessNotice={showToast}
-      />
+        {isJoinOpen && (
+          <JoinModal
+            isOpen={isJoinOpen}
+            onClose={() => setIsJoinOpen(false)}
+            onSuccessNotice={showToast}
+          />
+        )}
+      </Suspense>
 
       {/* Floating Scroll-to-Top Button */}
       <ScrollProgressButton />
