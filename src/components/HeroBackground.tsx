@@ -36,8 +36,9 @@ export const HeroBackground: React.FC = () => {
     window.addEventListener('mousemove', handleMouseMove, { passive: true });
     handleResize();
 
-    // 24 Color stops exactly mirroring the heroGrad gradient across the width
+    // 24 Color stops mirroring the heroGrad gradient across the width
     const paletteStops = [
+      { r: 85, g: 6, b: 4 },     // Deep Maroon Anchor
       { r: 105, g: 10, b: 6 },   // 0: Deep Crimson #690A06
       { r: 112, g: 14, b: 8 },   // 1: Ruby Crimson #700E08
       { r: 110, g: 20, b: 12 },  // 2: Crimson-Walnut
@@ -61,7 +62,6 @@ export const HeroBackground: React.FC = () => {
       { r: 245, g: 245, b: 245 },// 20: Clean Off-White
       { r: 245, g: 245, b: 245 },// 21: Clean Off-White
       { r: 245, g: 245, b: 245 },// 22: Clean Off-White
-      { r: 245, g: 245, b: 245 },// 23: Clean Off-White
     ];
 
     const getPaletteColor = (t: number) => {
@@ -81,28 +81,35 @@ export const HeroBackground: React.FC = () => {
     let time = 0;
 
     const render = () => {
-      time += 0.018; // Smooth, visible wave flow
+      time += 0.018; // Smooth wave flow
       mouse.x += (mouse.targetX - mouse.x) * 0.05;
       mouse.y += (mouse.targetY - mouse.y) * 0.05;
 
       ctx.clearRect(0, 0, width, height);
 
-      // Determine number of vertical fluted waves across the screen (matching the ~24 folds in heroGrad)
+      // 0. Base deep maroon anchor on left to ensure 0% white gap ever appears
+      const baseLeftGrad = ctx.createLinearGradient(0, 0, width * 0.25, 0);
+      baseLeftGrad.addColorStop(0, '#420604');
+      baseLeftGrad.addColorStop(0.5, '#690A06');
+      baseLeftGrad.addColorStop(1, 'rgba(105, 10, 6, 0)');
+      ctx.fillStyle = baseLeftGrad;
+      ctx.fillRect(0, 0, width * 0.25, height);
+
+      // Determine number of vertical fluted waves across the screen
       const columnCount = Math.max(18, Math.min(28, Math.floor(width / 55)));
       const colWidth = width / columnCount;
 
-      // 1. Procedural High-Definition Undulating Wavy Folds
-      // Each fold sways with harmonic sine waves, creating smooth, clear, living drapery
       const stepsY = 32;
       const stepH = height / stepsY;
 
-      // Calculate boundary wave points for each vertical seam
-      const seamPoints: { x: number; y: number }[][] = [];
+      // START FROM c = -2 so the fluted waves extend well off the left screen edge!
+      const minCol = -2;
+      const maxCol = columnCount + 2;
+      const seamPoints: Map<number, { x: number; y: number }[]> = new Map();
 
-      for (let c = 0; c <= columnCount; c++) {
+      for (let c = minCol; c <= maxCol; c++) {
         const points: { x: number; y: number }[] = [];
         const baseColX = c * colWidth;
-        const colRatio = c / columnCount;
 
         for (let s = 0; s <= stepsY; s++) {
           const y = s * stepH;
@@ -116,15 +123,15 @@ export const HeroBackground: React.FC = () => {
           const x = baseColX + wave1 + wave2 + wave3 + mouseDisplace;
           points.push({ x, y });
         }
-        seamPoints.push(points);
+        seamPoints.set(c, points);
       }
 
       // Draw each fluted column with 3D cylindrical lighting & rich palette gradient
-      for (let c = 0; c < columnCount; c++) {
-        const leftPoints = seamPoints[c];
-        const rightPoints = seamPoints[c + 1];
-        const midRatio = (c + 0.5) / columnCount;
-        const colColor = getPaletteColor(midRatio);
+      for (let c = minCol; c < maxCol; c++) {
+        const leftPoints = seamPoints.get(c)!;
+        const rightPoints = seamPoints.get(c + 1)!;
+        const normalizedRatio = Math.max(0, Math.min(1, (c + 0.5) / columnCount));
+        const colColor = getPaletteColor(normalizedRatio);
 
         ctx.beginPath();
         // Trace left seam downwards
@@ -152,34 +159,76 @@ export const HeroBackground: React.FC = () => {
         ctx.lineTo(rightPoints[0].x, rightPoints[0].y);
         ctx.closePath();
 
-        // 3D Fluted Cylinder Lighting: Linear gradient across the fold creates crisp optical depth
+        // 3D Fluted Cylinder Lighting
         const sampleY = height * 0.5;
         const xLeft = leftPoints[Math.floor(stepsY / 2)].x;
         const xRight = rightPoints[Math.floor(stepsY / 2)].x;
 
         const foldGrad = ctx.createLinearGradient(xLeft, sampleY, xRight, sampleY);
 
-        // Highlight crest and valley shadows
         const highlightMult = 1.18;
         const shadowMult = 0.82;
 
-        const cLight = `rgb(${Math.min(255, Math.floor(colColor.r * highlightMult))}, ${Math.min(255, Math.floor(colColor.g * highlightMult))}, ${Math.min(255, Math.floor(colColor.b * highlightMult))})`;
+        const cLight = `rgb(${Math.min(255, Math.floor(colColor.r * highlightMult))}, ${Math.min(255, Math.floor(colColor.g * highlightMult))}, ${Math.min(255, Math.floor(colColor.g * highlightMult))})`;
         const cBase = `rgb(${colColor.r}, ${colColor.g}, ${colColor.b})`;
         const cShadow = `rgb(${Math.floor(colColor.r * shadowMult)}, ${Math.floor(colColor.g * shadowMult)}, ${Math.floor(colColor.b * shadowMult)})`;
 
-        foldGrad.addColorStop(0, cShadow);      // Left shadow seam
-        foldGrad.addColorStop(0.35, cLight);    // Highlight ridge
-        foldGrad.addColorStop(0.85, cBase);     // Main body
-        foldGrad.addColorStop(1, cShadow);      // Right shadow seam
+        foldGrad.addColorStop(0, cShadow);
+        foldGrad.addColorStop(0.35, cLight);
+        foldGrad.addColorStop(0.85, cBase);
+        foldGrad.addColorStop(1, cShadow);
 
         ctx.fillStyle = foldGrad;
         ctx.fill();
 
-        // Delicate seam shadow line for razor-sharp fold definition
         ctx.lineWidth = 0.8;
-        ctx.strokeStyle = `rgba(0, 0, 0, ${midRatio < 0.4 ? 0.32 : 0.12})`;
+        ctx.strokeStyle = `rgba(0, 0, 0, ${normalizedRatio < 0.4 ? 0.32 : 0.12})`;
         ctx.stroke();
       }
+
+      // 1. EXTRA DISTINCT WAVY MAROON BAR ON THE LEFT SIDE OF THE SCREEN
+      // Requested by user to eliminate white visibility and anchor the drapery
+      const maroonBarWidth = Math.max(90, width * 0.11);
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(-10, 0);
+
+      // Left edge stays anchored past screen (-10)
+      ctx.lineTo(-10, height);
+
+      // Bottom edge connects to right contour of the maroon bar
+      const bottomWave = Math.sin(height * 0.007 + time * 1.5) * 16 + Math.cos(time * 0.9) * 8;
+      ctx.lineTo(maroonBarWidth + bottomWave, height);
+
+      // Curve upward along the undulating right boundary of the extra maroon bar
+      for (let s = stepsY - 1; s >= 0; s--) {
+        const y = s * stepH;
+        const wave = Math.sin(y * 0.008 + time * 1.5) * 18 + Math.cos(y * 0.016 - time * 1.2) * 9;
+        const x = maroonBarWidth + wave;
+        ctx.lineTo(x, y);
+      }
+      ctx.lineTo(-10, 0);
+      ctx.closePath();
+
+      // Rich 3D velvet maroon gradient
+      const maroonGrad = ctx.createLinearGradient(0, height * 0.5, maroonBarWidth + 20, height * 0.5);
+      maroonGrad.addColorStop(0, '#350402');      // Midnight Maroon
+      maroonGrad.addColorStop(0.25, '#540805');   // Deep Burgundy
+      maroonGrad.addColorStop(0.6, '#750e08');    // Rich Velvet Maroon
+      maroonGrad.addColorStop(0.85, '#91160e');   // Luminous Crimson Crest
+      maroonGrad.addColorStop(1, '#4a0805');      // Edge Shadow Seam
+
+      ctx.fillStyle = maroonGrad;
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
+      ctx.shadowBlur = 18;
+      ctx.shadowOffsetX = 6;
+      ctx.fill();
+
+      // Subtle gold-kissed inner sheen line along the crest of the extra wavy maroon bar
+      ctx.lineWidth = 1.2;
+      ctx.strokeStyle = 'rgba(242, 234, 211, 0.28)';
+      ctx.stroke();
+      ctx.restore();
 
       // 2. Continuous Soft Specular Sheen Moving Across the Undulating Waves
       const sheenX = ((Math.sin(time * 0.6) + 1) / 2) * (width * 1.3) - width * 0.15;
@@ -199,11 +248,11 @@ export const HeroBackground: React.FC = () => {
       ctx.fillStyle = sheenGrad;
       ctx.fillRect(0, 0, width, height);
 
-      // 3. Subtle Warm Ambient Ruby Glow Pulse on Left Folds
-      const rubyPulse = Math.sin(time * 1.4) * 0.08 + 0.15;
-      const rubyGrad = ctx.createRadialGradient(width * 0.1, height * 0.3, 0, width * 0.1, height * 0.3, width * 0.4);
+      // 3. Warm Ambient Ruby Glow Pulse on Left Folds
+      const rubyPulse = Math.sin(time * 1.4) * 0.08 + 0.18;
+      const rubyGrad = ctx.createRadialGradient(width * 0.08, height * 0.35, 0, width * 0.08, height * 0.35, width * 0.45);
       rubyGrad.addColorStop(0, `rgba(180, 20, 10, ${rubyPulse})`);
-      rubyGrad.addColorStop(0.7, 'rgba(63, 35, 5, 0.04)');
+      rubyGrad.addColorStop(0.65, 'rgba(63, 35, 5, 0.06)');
       rubyGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
 
       ctx.fillStyle = rubyGrad;
@@ -224,8 +273,8 @@ export const HeroBackground: React.FC = () => {
   return (
     <div className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none select-none">
       {/* 
-        High-Resolution Native Vector Wave Canvas:
-        Crystal-clear, zero distortion, zero blur, continuously undulating wavy fluted folds
+        High-Resolution Native Vector Wave Canvas with Extra Wavy Maroon Bar on Left:
+        Guaranteed zero white bleed on the left edge with fluid harmonic drape.
       */}
       <canvas
         ref={canvasRef}
@@ -233,8 +282,14 @@ export const HeroBackground: React.FC = () => {
         aria-hidden="true"
       />
 
+      {/* Static Left Edge Backup Scrim (Maroon Gradient Bar) to guarantee 100% solid opacity */}
+      <div 
+        className="absolute inset-y-0 left-0 w-16 sm:w-24 md:w-32 bg-gradient-to-r from-[#3b0503] via-[#5c0b07]/80 to-transparent pointer-events-none"
+        aria-hidden="true" 
+      />
+
       {/* Gentle Edge Scrim for Perfect Typography Legibility */}
-      <div className="absolute inset-0 bg-gradient-to-r from-black/20 via-transparent to-[#F5F5F5]/15 pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-r from-black/25 via-transparent to-[#F5F5F5]/15 pointer-events-none" />
 
       {/* Ultra-subtle fine-art tactile silk grain */}
       <div 

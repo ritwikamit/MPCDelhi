@@ -2,25 +2,17 @@ import React from 'react';
 import { Home, Image, User, Calendar } from 'lucide-react';
 
 interface MobileQuickNavProps {
+  currentPage: 'home' | 'founder' | 'services' | 'studio';
+  onNavigate: (page: 'home' | 'founder' | 'services' | 'studio', sectionId?: string) => void;
   onOpenBooking: () => void;
   onOpenGallery?: () => void;
 }
 
 export const MobileQuickNav: React.FC<MobileQuickNavProps> = ({
+  currentPage,
+  onNavigate,
   onOpenBooking,
-  onOpenGallery,
 }) => {
-  const scrollTo = (id: string) => {
-    if (id === 'top') {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      return;
-    }
-    const elem = document.getElementById(id);
-    if (elem) {
-      elem.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
-
   const whatsappUrl = `https://wa.me/919876543210?text=${encodeURIComponent(
     'Hi Nagender Kumar, I would like to inquire about a wedding or photography shoot with My Photo Club!'
   )}`;
@@ -33,18 +25,20 @@ export const MobileQuickNav: React.FC<MobileQuickNavProps> = ({
     >
       {/* Home */}
       <button
-        onClick={() => scrollTo('top')}
-        className="flex flex-col items-center gap-1 text-[#3F2305]/80 hover:text-[#3F2305] active:scale-95 transition-transform p-1.5 cursor-pointer"
+        onClick={() => onNavigate('home', 'home')}
+        className={`flex flex-col items-center gap-1 active:scale-95 transition-transform p-1.5 cursor-pointer ${
+          currentPage === 'home' ? 'text-[#3F2305] font-bold' : 'text-[#3F2305]/70'
+        }`}
         aria-label="Go to Home"
       >
         <Home className="w-5 h-5" />
-        <span className="text-[10px] font-medium tracking-wider uppercase">Home</span>
+        <span className="text-[10px] tracking-wider uppercase">Home</span>
       </button>
 
       {/* Stories / Gallery */}
       <button
-        onClick={() => scrollTo('stories')}
-        className="flex flex-col items-center gap-1 text-[#3F2305]/80 hover:text-[#3F2305] active:scale-95 transition-transform p-1.5 cursor-pointer"
+        onClick={() => onNavigate('home', 'stories')}
+        className="flex flex-col items-center gap-1 text-[#3F2305]/70 hover:text-[#3F2305] active:scale-95 transition-transform p-1.5 cursor-pointer"
         aria-label="View Stories"
       >
         <Image className="w-5 h-5" />
@@ -60,7 +54,6 @@ export const MobileQuickNav: React.FC<MobileQuickNavProps> = ({
         aria-label="Chat on WhatsApp"
       >
         <div className="w-12 h-12 rounded-full bg-[#25D366] text-white flex items-center justify-center shadow-lg shadow-emerald-900/30 ring-4 ring-[#F5F5F5] group-hover:scale-105 active:scale-95 transition-transform">
-          {/* Authentic WhatsApp SVG Icon */}
           <svg
             className="w-6 h-6 fill-current"
             viewBox="0 0 24 24"
@@ -74,20 +67,22 @@ export const MobileQuickNav: React.FC<MobileQuickNavProps> = ({
         </span>
       </a>
 
-      {/* Founder */}
+      {/* Dedicated Founder Page */}
       <button
-        onClick={() => scrollTo('founder')}
-        className="flex flex-col items-center gap-1 text-[#3F2305]/80 hover:text-[#3F2305] active:scale-95 transition-transform p-1.5 cursor-pointer"
+        onClick={() => onNavigate('founder')}
+        className={`flex flex-col items-center gap-1 active:scale-95 transition-transform p-1.5 cursor-pointer ${
+          currentPage === 'founder' ? 'text-[#3F2305] font-bold' : 'text-[#3F2305]/70'
+        }`}
         aria-label="About Founder"
       >
         <User className="w-5 h-5" />
-        <span className="text-[10px] font-medium tracking-wider uppercase">Founder</span>
+        <span className="text-[10px] tracking-wider uppercase">Founder</span>
       </button>
 
       {/* Book */}
       <button
         onClick={onOpenBooking}
-        className="flex flex-col items-center gap-1 text-[#3F2305]/80 hover:text-[#3F2305] active:scale-95 transition-transform p-1.5 cursor-pointer"
+        className="flex flex-col items-center gap-1 text-[#3F2305]/70 hover:text-[#3F2305] active:scale-95 transition-transform p-1.5 cursor-pointer"
         aria-label="Book Shoot"
       >
         <Calendar className="w-5 h-5" />

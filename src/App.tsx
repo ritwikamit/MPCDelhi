@@ -1,9 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { HERO_PHOTOS, LANDSCAPE_WORKS } from './data/agencyData';
 import { HeroPhoto, LandscapeWork } from './types';
 import { Header } from './components/Header';
 import { HeroSection } from './components/HeroSection';
-import { FounderSection } from './components/FounderSection';
 import { LandscapeSection } from './components/LandscapeSection';
 import { StudioSection } from './components/StudioSection';
 import { ServicesSection } from './components/ServicesSection';
@@ -16,13 +15,21 @@ import { JoinModal } from './components/JoinModal';
 import { ScrollProgressButton } from './components/ScrollProgressButton';
 import { LoadingScreen } from './components/LoadingScreen';
 import { MobileQuickNav } from './components/MobileQuickNav';
+import { FounderPage } from './pages/FounderPage';
+import { ServicesPage } from './pages/ServicesPage';
+import { StudioPage } from './pages/StudioPage';
 import { CheckCircle2, X } from 'lucide-react';
 
 type AnyMediaItem = 
   | { type: 'portrait'; data: HeroPhoto }
   | { type: 'landscape'; data: LandscapeWork };
 
+export type PageId = 'home' | 'founder' | 'services' | 'studio';
+
 export default function App() {
+  // Page routing state
+  const [currentPage, setCurrentPage] = useState<PageId>('home');
+
   // Modal states
   const [selectedItem, setSelectedItem] = useState<AnyMediaItem | null>(null);
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
@@ -32,6 +39,66 @@ export default function App() {
   // Notification Toast
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
+  // Initialize and synchronize with browser hash history
+  useEffect(() => {
+    const handleHash = () => {
+      const hash = window.location.hash.toLowerCase().replace('#', '');
+      if (hash === 'founder') {
+        setCurrentPage('founder');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else if (hash === 'services-page' || hash === 'packages') {
+        setCurrentPage('services');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else if (hash === 'studio-page' || hash === 'philosophy') {
+        setCurrentPage('studio');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else if (hash === 'stories' || hash === 'services' || hash === 'contact' || hash === 'book') {
+        setCurrentPage('home');
+        setTimeout(() => {
+          const el = document.getElementById(hash);
+          if (el) el.scrollIntoView({ behavior: 'smooth' });
+        }, 100);
+      } else {
+        setCurrentPage('home');
+      }
+    };
+
+    handleHash();
+    window.addEventListener('hashchange', handleHash);
+    return () => window.removeEventListener('hashchange', handleHash);
+  }, []);
+
+  const handleNavigate = (page: PageId, sectionId?: string) => {
+    if (page === currentPage) {
+      if (sectionId) {
+        const el = document.getElementById(sectionId);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth' });
+          window.history.pushState(null, '', `#${sectionId}`);
+        }
+      } else {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+      return;
+    }
+
+    setCurrentPage(page);
+    if (page === 'home') {
+      window.history.pushState(null, '', sectionId ? `#${sectionId}` : '#');
+      if (sectionId) {
+        setTimeout(() => {
+          const el = document.getElementById(sectionId);
+          if (el) el.scrollIntoView({ behavior: 'smooth' });
+        }, 120);
+      } else {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    } else {
+      window.history.pushState(null, '', `#${page}`);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
   const showToast = (message: string) => {
     setToastMessage(message);
     setTimeout(() => {
@@ -40,16 +107,28 @@ export default function App() {
   };
 
   const handleOpenBooking = () => {
-    const bookElem = document.getElementById('book');
-    if (bookElem) {
-      bookElem.scrollIntoView({ behavior: 'smooth' });
+    if (currentPage !== 'home') {
+      setCurrentPage('home');
+      setTimeout(() => {
+        const bookElem = document.getElementById('book');
+        if (bookElem) bookElem.scrollIntoView({ behavior: 'smooth' });
+      }, 150);
+    } else {
+      const bookElem = document.getElementById('book');
+      if (bookElem) bookElem.scrollIntoView({ behavior: 'smooth' });
     }
   };
 
   const handleOpenContact = () => {
-    const contactElem = document.getElementById('contact');
-    if (contactElem) {
-      contactElem.scrollIntoView({ behavior: 'smooth' });
+    if (currentPage !== 'home') {
+      setCurrentPage('home');
+      setTimeout(() => {
+        const contactElem = document.getElementById('contact');
+        if (contactElem) contactElem.scrollIntoView({ behavior: 'smooth' });
+      }, 150);
+    } else {
+      const contactElem = document.getElementById('contact');
+      if (contactElem) contactElem.scrollIntoView({ behavior: 'smooth' });
     }
   };
 
@@ -78,56 +157,98 @@ export default function App() {
         </div>
       )}
 
-      {/* Top Bar Header with completely backgroundless palette logo */}
+      {/* 
+        Top Bar Header:
+        - Prioritized necessary menus (HOME, FOUNDER, STORIES, SERVICES, CONTACT)
+        - "MORE" dropdown for remaining sections
+        - Live animated nav indicator on scroll
+      */}
       <Header
+        currentPage={currentPage}
+        onNavigate={handleNavigate}
         onOpenJoin={() => setIsJoinOpen(true)}
         onOpenBooking={handleOpenBooking}
-        onOpenContact={handleOpenContact}
         onOpenGallery={() => setIsGalleryOpen(true)}
       />
 
-      {/* Hero Section with fluid silk animated background (zero cylinders/stripes) */}
-      <HeroSection
-        photos={HERO_PHOTOS}
-        onSelectPhoto={(photo) => setSelectedItem({ type: 'portrait', data: photo })}
-        onOpenGallery={() => setIsGalleryOpen(true)}
-      />
+      {/* Main Routed Page Content */}
+      <main className="flex-1 w-full">
+        {currentPage === 'home' && (
+          <div className="animate-in fade-in duration-300">
+            {/* Hero Section with extra wavy maroon bar and zero white bleed */}
+            <HeroSection
+              photos={HERO_PHOTOS}
+              onSelectPhoto={(photo) => setSelectedItem({ type: 'portrait', data: photo })}
+              onOpenGallery={() => setIsGalleryOpen(true)}
+            />
 
-      {/* Founder Profile & Story: Nagender Kumar with small sharp cropped photo and cursive text */}
-      <FounderSection 
-        onOpenBooking={handleOpenBooking} 
-        onOpenGallery={() => setIsGalleryOpen(true)}
-      />
+            {/* Note: Founder Section is moved to its own dedicated page (FounderPage) */}
 
-      {/* Landscape Stories Section: Real landscape photos from MPCDelhi/Landscape */}
-      <LandscapeSection
-        onSelectLandscape={(work) => setSelectedItem({ type: 'landscape', data: work })}
-        onOpenGallery={() => setIsGalleryOpen(true)}
-      />
+            {/* Signature Landscape Stories & Destination Nuptials */}
+            <LandscapeSection
+              onSelectLandscape={(work) => setSelectedItem({ type: 'landscape', data: work })}
+              onOpenGallery={() => setIsGalleryOpen(true)}
+            />
 
-      {/* Studio Philosophy & Quantitative Metrics */}
-      <StudioSection onOpenBooking={handleOpenBooking} />
+            {/* Studio Teaser Section */}
+            <StudioSection onOpenBooking={handleOpenBooking} />
 
-      {/* Services & Carefully Planned Packages */}
-      <ServicesSection onOpenBooking={handleOpenBooking} />
+            {/* Services & Packages Showcase */}
+            <ServicesSection onOpenBooking={handleOpenBooking} />
 
-      {/* Interactive Project Scoping & Booking Engine */}
-      <BookingSection
-        initialTalentName={prefilledTalent}
-        onSuccessNotice={showToast}
-      />
+            {/* Booking & Scoping Section */}
+            <BookingSection
+              initialTalentName={prefilledTalent}
+              onSuccessNotice={showToast}
+            />
 
-      {/* Delhi Headquarters & Studio Hubs */}
-      <ContactSection onSuccessNotice={showToast} />
+            {/* Delhi Studio Headquarters & Contact Form */}
+            <ContactSection onSuccessNotice={showToast} />
+          </div>
+        )}
 
-      {/* Clean Redesigned Footer with Dark Transparent Fire Glow (zero cylinders/pill badges) */}
+        {/* Dedicated Founder Page */}
+        {currentPage === 'founder' && (
+          <div className="animate-in fade-in duration-300">
+            <FounderPage
+              onOpenBooking={handleOpenBooking}
+              onOpenGallery={() => setIsGalleryOpen(true)}
+              onBackToHome={() => handleNavigate('home', 'home')}
+            />
+          </div>
+        )}
+
+        {/* Dedicated Services Page */}
+        {currentPage === 'services' && (
+          <div className="animate-in fade-in duration-300">
+            <ServicesPage
+              onOpenBooking={handleOpenBooking}
+              onBackToHome={() => handleNavigate('home', 'home')}
+            />
+          </div>
+        )}
+
+        {/* Dedicated Studio & Philosophy Page */}
+        {currentPage === 'studio' && (
+          <div className="animate-in fade-in duration-300">
+            <StudioPage
+              onOpenBooking={handleOpenBooking}
+              onOpenGallery={() => setIsGalleryOpen(true)}
+              onBackToHome={() => handleNavigate('home', 'home')}
+            />
+          </div>
+        )}
+      </main>
+
+      {/* Dark Lucid Transparent Footer */}
       <Footer
+        onNavigate={handleNavigate}
         onOpenJoin={() => setIsJoinOpen(true)}
         onOpenBooking={handleOpenBooking}
         onOpenGallery={() => setIsGalleryOpen(true)}
       />
 
-      {/* Dedicated Gallery Page Modal (All 25 Landscapes + 9 Portraits) */}
+      {/* Dedicated Full Photo Gallery Modal */}
       <DedicatedGalleryModal
         isOpen={isGalleryOpen}
         onClose={() => setIsGalleryOpen(false)}
@@ -151,18 +272,20 @@ export default function App() {
         }}
       />
 
-      {/* Collaborative Team / Inquiries Drawer */}
+      {/* Collaborative Team Inquiries Drawer */}
       <JoinModal
         isOpen={isJoinOpen}
         onClose={() => setIsJoinOpen(false)}
         onSuccessNotice={showToast}
       />
 
-      {/* Floating Scroll-to-Top Button with Dynamic Circular Fill Progress */}
+      {/* Floating Scroll-to-Top Button */}
       <ScrollProgressButton />
 
-      {/* Constant Mobile Quick Nav Bar with WhatsApp Action */}
+      {/* Mobile Quick Navigation Bar */}
       <MobileQuickNav
+        currentPage={currentPage}
+        onNavigate={handleNavigate}
         onOpenBooking={handleOpenBooking}
         onOpenGallery={() => setIsGalleryOpen(true)}
       />

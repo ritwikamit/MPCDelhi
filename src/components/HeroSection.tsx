@@ -16,7 +16,8 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
 }) => {
   return (
     <section 
-      className="relative w-full min-h-[calc(100svh-70px)] sm:min-h-[calc(100vh-80px)] flex flex-col justify-between pt-4 sm:pt-6 pb-6 sm:pb-10 overflow-hidden bg-[#F5F5F5]"
+      id="home"
+      className="relative w-full min-h-[calc(100svh-70px)] sm:min-h-[calc(100vh-80px)] flex flex-col justify-between pt-4 sm:pt-6 pb-6 sm:pb-10 overflow-hidden bg-gradient-to-r from-[#3b0503] via-[#2d1803]/40 to-[#F5F5F5]"
     >
       {/* Pristine Animated 60FPS Fluted Wave Background with Zero Distortion */}
       <HeroBackground />
@@ -56,7 +57,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
         {/* Bottom Left "SCROLL" indicator */}
         <div className="pb-1 sm:pb-2">
           <a
-            href="#founder"
+            href="#stories"
             className="group flex items-center gap-2 text-[10px] sm:text-[11px] font-bold tracking-[0.22em] uppercase text-[#3F2305] bg-[#F5F5F5]/85 backdrop-blur-xs px-3.5 py-1.5 rounded-full border border-[#DFD7BF]/70 transition-all font-sans hover:bg-[#F2EAD3]"
           >
             <span>SCROLL</span>
